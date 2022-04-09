@@ -7,5 +7,5 @@ type Repo interface {
 	DeleteToDo(id int) error
 	UpdateToDo(*model.ToDo) (*model.ToDo, error)
 	ReadToDo(id int) (*model.ToDo, error)
-	ListTodo() ([]*model.ToDo, error)
+	ListToDo() []*model.ToDo
 }

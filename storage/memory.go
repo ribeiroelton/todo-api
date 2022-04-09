@@ -55,7 +55,7 @@ func (d *Database) DeleteToDo(id int) error {
 	return errors.New("id not found")
 }
 
-func (d *Database) GetToDo(id int) (*model.ToDo, error) {
+func (d *Database) ReadToDo(id int) (*model.ToDo, error) {
 	if _, ok := d.storage[id]; ok {
 		return d.storage[id], nil
 	}

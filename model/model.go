@@ -3,9 +3,9 @@ package model
 import "time"
 
 type ToDo struct {
-	Id          int
-	Title       string
-	Description string
-	Responsible string
-	When        time.Time
+	Id          int       `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Responsible string    `json:"responsible"`
+	When        time.Time `json:"when"`
 }
