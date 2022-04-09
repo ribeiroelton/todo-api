@@ -1,10 +1,10 @@
-package repository
+package storage
 
 import (
 	"errors"
 	"sync"
 
-	"github.com/el7onr/go-todo/internal/model"
+	"github.com/el7onr/go-todo/model"
 )
 
 type Database struct {

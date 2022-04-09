@@ -1,6 +1,6 @@
-package repository
+package storage
 
-import "github.com/el7onr/go-todo/internal/model"
+import "github.com/el7onr/go-todo/model"
 
 type Repo interface {
 	CreateToDo(*model.ToDo) (*model.ToDo, error)
