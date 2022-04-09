@@ -113,7 +113,7 @@ func (a *apiServer) deleteToDo(c echo.Context) error {
 		return err
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, "error while getting data")
+		c.JSON(http.StatusInternalServerError, "error while deleting data")
 		return err
 	}
 
