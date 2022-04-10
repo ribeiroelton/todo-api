@@ -9,3 +9,8 @@ type ToDo struct {
 	Responsible string    `json:"responsible"`
 	When        time.Time `json:"when"`
 }
+
+type ErrorMessage struct {
+	Message string `json:"message"`
+	Details string `json:"details"`
+}

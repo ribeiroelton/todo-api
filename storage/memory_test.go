@@ -45,14 +45,14 @@ func TestListToDo_zero(t *testing.T) {
 func TestGetTodo_ok(t *testing.T) {
 	db := storage.NewDatabase()
 	db.CreateToDo(&model.ToDo{})
-	m, err := db.GetToDo(0)
+	m, err := db.ReadToDo(0)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 }
 
 func TestGetTodo_not_found(t *testing.T) {
 	db := storage.NewDatabase()
-	m, err := db.GetToDo(0)
+	m, err := db.ReadToDo(0)
 	assert.Contains(t, err.Error(), "not found")
 	assert.Nil(t, m)
 }

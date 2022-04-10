@@ -11,9 +11,9 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-type apiServer struct {
-	config *config.Config
-	server *echo.Echo
+type Handler struct {
+	Config *config.Config
+	Server *echo.Echo
 }
 
 func StartServer(c *config.Config) {
@@ -28,9 +28,9 @@ func StartServer(c *config.Config) {
 	r.Use(middleware.CORSWithConfig(cors))
 	r.Use(middleware.Logger())
 
-	a := &apiServer{
-		config: c,
-		server: r,
+	a := &Handler{
+		Config: c,
+		Server: r,
 	}
 
 	a.register(r)
@@ -40,26 +40,26 @@ func StartServer(c *config.Config) {
 	}
 }
 
-func (a *apiServer) register(e *echo.Echo) {
-	e.POST("/todos", a.createToDo)
-	e.GET("/todos", a.listToDo)
-	e.GET("/todos/:id", a.getToDo)
-	e.DELETE("/todos/:id", a.deleteToDo)
-	e.PUT("/todos/:id", a.updateToDo)
+func (h *Handler) register(e *echo.Echo) {
+	e.POST("/todos", h.CreateToDo)
+	e.GET("/todos", h.ListToDo)
+	e.GET("/todos/:id", h.GetToDo)
+	e.DELETE("/todos/:id", h.DeleteToDo)
+	e.PUT("/todos/:id", h.UpdateToDo)
 }
 
-func (a *apiServer) createToDo(c echo.Context) error {
+func (h *Handler) CreateToDo(c echo.Context) error {
 	m := &model.ToDo{}
 
 	err := c.Bind(m)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "invalid json")
+		c.JSON(http.StatusBadRequest, generateErrorResponse("invalid json", err))
 		return err
 	}
 
-	r, err := a.config.DB.CreateToDo(m)
+	r, err := h.Config.DB.CreateToDo(m)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, "error while writing data")
+		c.JSON(http.StatusInternalServerError, generateErrorResponse("error while writing data", err))
 		return err
 	}
 
@@ -68,29 +68,29 @@ func (a *apiServer) createToDo(c echo.Context) error {
 	return nil
 }
 
-func (a *apiServer) listToDo(c echo.Context) error {
-	r := a.config.DB.ListToDo()
+func (h *Handler) ListToDo(c echo.Context) error {
+	r := h.Config.DB.ListToDo()
 
 	c.JSON(http.StatusOK, r)
 
 	return nil
 }
 
-func (a *apiServer) getToDo(c echo.Context) error {
+func (h *Handler) GetToDo(c echo.Context) error {
 	param := c.Param("id")
 	id, err := strconv.Atoi(param)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "invalid parameter")
+		c.JSON(http.StatusBadRequest, generateErrorResponse("invalid parameter", err))
 		return err
 	}
 
-	r, err := a.config.DB.ReadToDo(id)
+	r, err := h.Config.DB.ReadToDo(id)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, "error while getting data")
+		c.JSON(http.StatusInternalServerError, generateErrorResponse("eror while getting data", err))
 		return err
 	}
 
@@ -99,21 +99,21 @@ func (a *apiServer) getToDo(c echo.Context) error {
 	return nil
 }
 
-func (a *apiServer) deleteToDo(c echo.Context) error {
+func (h *Handler) DeleteToDo(c echo.Context) error {
 	param := c.Param("id")
 	id, err := strconv.Atoi(param)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "invalid parameter")
+		c.JSON(http.StatusBadRequest, generateErrorResponse("invalid parameter", err))
 		return err
 	}
 
-	err = a.config.DB.DeleteToDo(id)
+	err = h.Config.DB.DeleteToDo(id)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, "error while deleting data")
+		c.JSON(http.StatusInternalServerError, generateErrorResponse("error while deleting data", err))
 		return err
 	}
 
@@ -123,36 +123,43 @@ func (a *apiServer) deleteToDo(c echo.Context) error {
 
 }
 
-func (a *apiServer) updateToDo(c echo.Context) error {
+func (h *Handler) UpdateToDo(c echo.Context) error {
 	m := &model.ToDo{}
 
 	err := c.Bind(m)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "invalid json")
+		c.JSON(http.StatusBadRequest, generateErrorResponse("invalid json", err))
 		return err
 	}
 
 	param := c.Param("id")
 	id, err := strconv.Atoi(param)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "invalid parameter")
+		c.JSON(http.StatusBadRequest, generateErrorResponse("invalid parameter", err))
 		return err
 	}
 
 	m.Id = id
 
-	r, err := a.config.DB.UpdateToDo(m)
+	r, err := h.Config.DB.UpdateToDo(m)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, "error while updating data")
+		c.JSON(http.StatusInternalServerError, generateErrorResponse("error while updating data", err))
 		return err
 	}
 
 	c.JSON(http.StatusAccepted, r)
 	return nil
 
+}
+
+func generateErrorResponse(m string, err error) *model.ErrorMessage {
+	return &model.ErrorMessage{
+		Message: m,
+		Details: err.Error(),
+	}
 }
