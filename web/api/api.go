@@ -11,9 +11,9 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-type Handler struct {
-	Config *config.Config
-	Server *echo.Echo
+type handler struct {
+	config *config.Config
+	server *echo.Echo
 }
 
 func StartServer(c *config.Config) {
@@ -28,9 +28,9 @@ func StartServer(c *config.Config) {
 	r.Use(middleware.CORSWithConfig(cors))
 	r.Use(middleware.Logger())
 
-	a := &Handler{
-		Config: c,
-		Server: r,
+	a := &handler{
+		config: c,
+		server: r,
 	}
 
 	a.register(r)
@@ -40,15 +40,15 @@ func StartServer(c *config.Config) {
 	}
 }
 
-func (h *Handler) register(e *echo.Echo) {
-	e.POST("/todos", h.CreateToDo)
-	e.GET("/todos", h.ListToDo)
-	e.GET("/todos/:id", h.GetToDo)
-	e.DELETE("/todos/:id", h.DeleteToDo)
-	e.PUT("/todos/:id", h.UpdateToDo)
+func (h *handler) register(e *echo.Echo) {
+	e.POST("/todos", h.createToDo)
+	e.GET("/todos", h.listToDo)
+	e.GET("/todos/:id", h.getToDo)
+	e.DELETE("/todos/:id", h.deleteToDo)
+	e.PUT("/todos/:id", h.updateToDo)
 }
 
-func (h *Handler) CreateToDo(c echo.Context) error {
+func (h *handler) createToDo(c echo.Context) error {
 	m := &model.ToDo{}
 
 	err := c.Bind(m)
@@ -57,7 +57,7 @@ func (h *Handler) CreateToDo(c echo.Context) error {
 		return err
 	}
 
-	r, err := h.Config.DB.CreateToDo(m)
+	r, err := h.config.DB.CreateToDo(m)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, generateErrorResponse("error while writing data", err))
 		return err
@@ -68,15 +68,15 @@ func (h *Handler) CreateToDo(c echo.Context) error {
 	return nil
 }
 
-func (h *Handler) ListToDo(c echo.Context) error {
-	r := h.Config.DB.ListToDo()
+func (h *handler) listToDo(c echo.Context) error {
+	r := h.config.DB.ListToDo()
 
 	c.JSON(http.StatusOK, r)
 
 	return nil
 }
 
-func (h *Handler) GetToDo(c echo.Context) error {
+func (h *handler) getToDo(c echo.Context) error {
 	param := c.Param("id")
 	id, err := strconv.Atoi(param)
 	if err != nil {
@@ -84,7 +84,7 @@ func (h *Handler) GetToDo(c echo.Context) error {
 		return err
 	}
 
-	r, err := h.Config.DB.ReadToDo(id)
+	r, err := h.config.DB.ReadToDo(id)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err
@@ -99,7 +99,7 @@ func (h *Handler) GetToDo(c echo.Context) error {
 	return nil
 }
 
-func (h *Handler) DeleteToDo(c echo.Context) error {
+func (h *handler) deleteToDo(c echo.Context) error {
 	param := c.Param("id")
 	id, err := strconv.Atoi(param)
 	if err != nil {
@@ -107,7 +107,7 @@ func (h *Handler) DeleteToDo(c echo.Context) error {
 		return err
 	}
 
-	err = h.Config.DB.DeleteToDo(id)
+	err = h.config.DB.DeleteToDo(id)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err
@@ -123,7 +123,7 @@ func (h *Handler) DeleteToDo(c echo.Context) error {
 
 }
 
-func (h *Handler) UpdateToDo(c echo.Context) error {
+func (h *handler) updateToDo(c echo.Context) error {
 	m := &model.ToDo{}
 
 	err := c.Bind(m)
@@ -141,7 +141,7 @@ func (h *Handler) UpdateToDo(c echo.Context) error {
 
 	m.Id = id
 
-	r, err := h.Config.DB.UpdateToDo(m)
+	r, err := h.config.DB.UpdateToDo(m)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err

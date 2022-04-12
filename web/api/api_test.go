@@ -1,4 +1,4 @@
-package api_test
+package api
 
 import (
 	"net/http/httptest"
@@ -9,13 +9,12 @@ import (
 	"github.com/el7onr/go-todo/config"
 	"github.com/el7onr/go-todo/model"
 	"github.com/el7onr/go-todo/storage"
-	"github.com/el7onr/go-todo/web/api"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	handler  api.Handler
+	h        handler
 	ToDOJSON = `{
 		"title": "title1",
 		"description": "description1",
@@ -26,9 +25,9 @@ var (
 
 func setup() {
 	echoServer := echo.New()
-	handler = api.Handler{
-		Config: &config.Config{DB: nil},
-		Server: echoServer,
+	h = handler{
+		config: &config.Config{DB: nil},
+		server: echoServer,
 	}
 
 }
@@ -40,42 +39,42 @@ func TestMain(m *testing.M) {
 
 func TestCreateToDo(t *testing.T) {
 	db := storage.NewDatabase()
-	handler.Config.DB = db
+	h.config.DB = db
 
 	req := httptest.NewRequest(echo.GET, "/todos", strings.NewReader(ToDOJSON))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
-	c := handler.Server.NewContext(req, rec)
+	c := h.server.NewContext(req, rec)
 
-	assert.NoError(t, handler.CreateToDo(c))
+	assert.NoError(t, h.createToDo(c))
 
 	t.Cleanup(func() {
-		handler.Config.DB.DeleteToDo(0)
+		h.config.DB.DeleteToDo(0)
 	})
 
 }
 
 func TestDeleteToDo(t *testing.T) {
 	db := storage.NewDatabase()
-	handler.Config.DB = db
+	h.config.DB = db
 	m := &model.ToDo{}
 
-	handler.Config.DB.CreateToDo(m)
+	h.config.DB.CreateToDo(m)
 
 	req := httptest.NewRequest(echo.DELETE, "/todos", strings.NewReader(""))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
-	c := handler.Server.NewContext(req, rec)
+	c := h.server.NewContext(req, rec)
 	c.SetPath("/:id")
 	c.SetParamNames("id")
 	c.SetParamValues("0")
 
-	assert.NoError(t, handler.DeleteToDo(c))
+	assert.NoError(t, h.deleteToDo(c))
 
-	list := handler.Config.DB.ListToDo()
+	list := h.config.DB.ListToDo()
 	assert.Len(t, list, 0)
 
 	t.Cleanup(func() {
-		handler.Config.DB.DeleteToDo(0)
+		h.config.DB.DeleteToDo(0)
 	})
 }
