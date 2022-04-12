@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	h        handler
+	h        apiHandler
 	ToDOJSON = `{
 		"title": "title1",
 		"description": "description1",
@@ -25,7 +25,7 @@ var (
 
 func setup() {
 	echoServer := echo.New()
-	h = handler{
+	h = apiHandler{
 		config: &config.Config{DB: nil},
 		server: echoServer,
 	}

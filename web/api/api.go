@@ -11,7 +11,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-type handler struct {
+type apiHandler struct {
 	config *config.Config
 	server *echo.Echo
 }
@@ -28,7 +28,7 @@ func StartServer(c *config.Config) {
 	r.Use(middleware.CORSWithConfig(cors))
 	r.Use(middleware.Logger())
 
-	a := &handler{
+	a := &apiHandler{
 		config: c,
 		server: r,
 	}
@@ -40,7 +40,7 @@ func StartServer(c *config.Config) {
 	}
 }
 
-func (h *handler) register(e *echo.Echo) {
+func (h *apiHandler) register(e *echo.Echo) {
 	e.POST("/todos", h.createToDo)
 	e.GET("/todos", h.listToDo)
 	e.GET("/todos/:id", h.getToDo)
@@ -48,7 +48,7 @@ func (h *handler) register(e *echo.Echo) {
 	e.PUT("/todos/:id", h.updateToDo)
 }
 
-func (h *handler) createToDo(c echo.Context) error {
+func (h *apiHandler) createToDo(c echo.Context) error {
 	m := &model.ToDo{}
 
 	err := c.Bind(m)
@@ -68,7 +68,7 @@ func (h *handler) createToDo(c echo.Context) error {
 	return nil
 }
 
-func (h *handler) listToDo(c echo.Context) error {
+func (h *apiHandler) listToDo(c echo.Context) error {
 	r := h.config.DB.ListToDo()
 
 	c.JSON(http.StatusOK, r)
@@ -76,7 +76,7 @@ func (h *handler) listToDo(c echo.Context) error {
 	return nil
 }
 
-func (h *handler) getToDo(c echo.Context) error {
+func (h *apiHandler) getToDo(c echo.Context) error {
 	param := c.Param("id")
 	id, err := strconv.Atoi(param)
 	if err != nil {
@@ -99,7 +99,7 @@ func (h *handler) getToDo(c echo.Context) error {
 	return nil
 }
 
-func (h *handler) deleteToDo(c echo.Context) error {
+func (h *apiHandler) deleteToDo(c echo.Context) error {
 	param := c.Param("id")
 	id, err := strconv.Atoi(param)
 	if err != nil {
@@ -123,7 +123,7 @@ func (h *handler) deleteToDo(c echo.Context) error {
 
 }
 
-func (h *handler) updateToDo(c echo.Context) error {
+func (h *apiHandler) updateToDo(c echo.Context) error {
 	m := &model.ToDo{}
 
 	err := c.Bind(m)
