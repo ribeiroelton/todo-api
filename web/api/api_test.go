@@ -23,7 +23,7 @@ var (
 	}`
 )
 
-func setupEnv() {
+func setup() {
 	echoServer := echo.New()
 	h = apiHandler{
 		config: &config.Config{DB: nil},
@@ -33,7 +33,7 @@ func setupEnv() {
 }
 
 func TestMain(m *testing.M) {
-	setupEnv()
+	setup()
 	os.Exit(m.Run())
 }
 
