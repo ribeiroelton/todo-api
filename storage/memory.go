@@ -13,7 +13,7 @@ type Database struct {
 	mux     sync.Mutex
 }
 
-func NewDatabase() *Database {
+func NewDatabase() Repo {
 	return &Database{
 		storage: make(map[int]*model.ToDo),
 		id:      0,
