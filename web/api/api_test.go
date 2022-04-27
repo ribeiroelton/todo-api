@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/el7onr/go-todo/config"
 	"github.com/el7onr/go-todo/model"
 	"github.com/el7onr/go-todo/storage"
 	"github.com/labstack/echo/v4"
@@ -25,8 +24,9 @@ var (
 
 func setupEnv() {
 	echoServer := echo.New()
+	db := storage.NewDatabase()
 	h = apiHandler{
-		config: &config.Config{DB: nil},
+		db:     db,
 		server: echoServer,
 	}
 
@@ -38,9 +38,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateToDo(t *testing.T) {
-	db := storage.NewDatabase()
-	h.config.DB = db
-
 	req := httptest.NewRequest(echo.GET, "/todos", strings.NewReader(ToDOJSON))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
@@ -49,17 +46,15 @@ func TestCreateToDo(t *testing.T) {
 	assert.NoError(t, h.createToDo(c))
 
 	t.Cleanup(func() {
-		h.config.DB.DeleteToDo(0)
+		h.db.DeleteToDo(0)
 	})
 
 }
 
 func TestDeleteToDo(t *testing.T) {
-	db := storage.NewDatabase()
-	h.config.DB = db
 	m := &model.ToDo{}
 
-	h.config.DB.CreateToDo(m)
+	h.db.CreateToDo(m)
 
 	req := httptest.NewRequest(echo.DELETE, "/todos", strings.NewReader(""))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -71,10 +66,10 @@ func TestDeleteToDo(t *testing.T) {
 
 	assert.NoError(t, h.deleteToDo(c))
 
-	list := h.config.DB.ListToDo()
+	list := h.db.ListToDo()
 	assert.Len(t, list, 0)
 
 	t.Cleanup(func() {
-		h.config.DB.DeleteToDo(0)
+		h.db.DeleteToDo(0)
 	})
 }

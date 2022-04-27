@@ -1,51 +1,41 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/el7onr/go-todo/config"
 	"github.com/el7onr/go-todo/model"
+	"github.com/el7onr/go-todo/storage"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 type apiHandler struct {
-	config *config.Config
 	server *echo.Echo
+	db     storage.Repo
 }
 
-func StartServer(c *config.Config) {
-
-	r := echo.New()
+func NewApiHandler(e *echo.Echo, db storage.Repo) {
 
 	cors := middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{"GET", "POST", "PUT", "OPTIONS", "HEADER"},
 	}
 
-	r.Use(middleware.CORSWithConfig(cors))
-	r.Use(middleware.Logger())
+	e.Use(middleware.CORSWithConfig(cors))
+	e.Use(middleware.Logger())
 
 	a := &apiHandler{
-		config: c,
-		server: r,
+		server: e,
+		db:     db,
 	}
 
-	a.register(r)
+	e.POST("/todos", a.createToDo)
+	e.GET("/todos", a.listToDo)
+	e.GET("/todos/:id", a.getToDo)
+	e.DELETE("/todos/:id", a.deleteToDo)
+	e.PUT("/todos/:id", a.updateToDo)
 
-	if err := r.Start("0.0.0.0:8080"); err != nil {
-		log.Fatalf("error while starting server %v \n", err)
-	}
-}
-
-func (h *apiHandler) register(e *echo.Echo) {
-	e.POST("/todos", h.createToDo)
-	e.GET("/todos", h.listToDo)
-	e.GET("/todos/:id", h.getToDo)
-	e.DELETE("/todos/:id", h.deleteToDo)
-	e.PUT("/todos/:id", h.updateToDo)
 }
 
 func (h *apiHandler) createToDo(c echo.Context) error {
@@ -57,7 +47,7 @@ func (h *apiHandler) createToDo(c echo.Context) error {
 		return err
 	}
 
-	r, err := h.config.DB.CreateToDo(m)
+	r, err := h.db.CreateToDo(m)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, generateErrorResponse("error while writing data", err))
 		return err
@@ -69,7 +59,7 @@ func (h *apiHandler) createToDo(c echo.Context) error {
 }
 
 func (h *apiHandler) listToDo(c echo.Context) error {
-	r := h.config.DB.ListToDo()
+	r := h.db.ListToDo()
 
 	c.JSON(http.StatusOK, r)
 
@@ -84,7 +74,7 @@ func (h *apiHandler) getToDo(c echo.Context) error {
 		return err
 	}
 
-	r, err := h.config.DB.ReadToDo(id)
+	r, err := h.db.ReadToDo(id)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err
@@ -107,7 +97,7 @@ func (h *apiHandler) deleteToDo(c echo.Context) error {
 		return err
 	}
 
-	err = h.config.DB.DeleteToDo(id)
+	err = h.db.DeleteToDo(id)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err
@@ -141,7 +131,7 @@ func (h *apiHandler) updateToDo(c echo.Context) error {
 
 	m.Id = id
 
-	r, err := h.config.DB.UpdateToDo(m)
+	r, err := h.db.UpdateToDo(m)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err
