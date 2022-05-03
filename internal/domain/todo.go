@@ -1,4 +1,4 @@
-package model
+package domain
 
 import "time"
 
@@ -8,9 +8,4 @@ type ToDo struct {
 	Description string    `json:"description"`
 	Responsible string    `json:"responsible"`
 	When        time.Time `json:"when"`
-}
-
-type ErrorMessage struct {
-	Message string `json:"message"`
-	Details string `json:"details"`
 }

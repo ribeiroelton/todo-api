@@ -4,52 +4,38 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/el7onr/go-todo/model"
-	"github.com/el7onr/go-todo/storage"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/ribeiroelton/todo-api/internal/domain"
+	"github.com/ribeiroelton/todo-api/internal/ports"
 )
 
-type apiHandler struct {
-	server *echo.Echo
-	db     storage.Repo
+type ToDoHandler struct {
+	service ports.ToDoService
 }
 
-func NewApiHandler(e *echo.Echo, db storage.Repo) {
-
-	cors := middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{"GET", "POST", "PUT", "OPTIONS", "HEADER"},
-	}
-
-	e.Use(middleware.CORSWithConfig(cors))
-	e.Use(middleware.Logger())
-
-	a := &apiHandler{
-		server: e,
-		db:     db,
-	}
-
-	e.POST("/todos", a.createToDo)
-	e.GET("/todos", a.listToDo)
-	e.GET("/todos/:id", a.getToDo)
-	e.DELETE("/todos/:id", a.deleteToDo)
-	e.PUT("/todos/:id", a.updateToDo)
-
+type ErrorMessage struct {
+	Message string `json:"message"`
+	Details string `json:"details"`
 }
 
-func (h *apiHandler) createToDo(c echo.Context) error {
-	m := &model.ToDo{}
+func NewToDoHandler(s ports.ToDoService) *ToDoHandler {
+	return &ToDoHandler{
+		service: s,
+	}
+}
+
+func (a *ToDoHandler) CreateToDo(c echo.Context) error {
+	m := &domain.ToDo{}
 
 	err := c.Bind(m)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, generateErrorResponse("invalid json", err))
+		c.JSON(http.StatusBadRequest, genError("invalid json", err))
 		return err
 	}
 
-	r, err := h.db.CreateToDo(m)
+	r, err := a.service.CreateToDo(m)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, generateErrorResponse("error while writing data", err))
+		c.JSON(http.StatusInternalServerError, genError("error while writing data", err))
 		return err
 	}
 
@@ -58,29 +44,32 @@ func (h *apiHandler) createToDo(c echo.Context) error {
 	return nil
 }
 
-func (h *apiHandler) listToDo(c echo.Context) error {
-	r := h.db.ListToDo()
+func (a *ToDoHandler) ListToDos(c echo.Context) error {
+	r, err := a.service.ListToDos()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+	}
 
 	c.JSON(http.StatusOK, r)
 
 	return nil
 }
 
-func (h *apiHandler) getToDo(c echo.Context) error {
+func (a *ToDoHandler) GetToDo(c echo.Context) error {
 	param := c.Param("id")
 	id, err := strconv.Atoi(param)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, generateErrorResponse("invalid parameter", err))
+		c.JSON(http.StatusBadRequest, genError("invalid parameter", err))
 		return err
 	}
 
-	r, err := h.db.ReadToDo(id)
+	r, err := a.service.GetTodoById(id)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, generateErrorResponse("eror while getting data", err))
+		c.JSON(http.StatusInternalServerError, genError("error while getting data", err))
 		return err
 	}
 
@@ -89,21 +78,21 @@ func (h *apiHandler) getToDo(c echo.Context) error {
 	return nil
 }
 
-func (h *apiHandler) deleteToDo(c echo.Context) error {
+func (a *ToDoHandler) DeleteToDo(c echo.Context) error {
 	param := c.Param("id")
 	id, err := strconv.Atoi(param)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, generateErrorResponse("invalid parameter", err))
+		c.JSON(http.StatusBadRequest, genError("invalid parameter", err))
 		return err
 	}
 
-	err = h.db.DeleteToDo(id)
+	err = a.service.DeleteToDoById(id)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, generateErrorResponse("error while deleting data", err))
+		c.JSON(http.StatusInternalServerError, genError("error while deleting data", err))
 		return err
 	}
 
@@ -113,32 +102,32 @@ func (h *apiHandler) deleteToDo(c echo.Context) error {
 
 }
 
-func (h *apiHandler) updateToDo(c echo.Context) error {
-	m := &model.ToDo{}
+func (a *ToDoHandler) UpdateToDo(c echo.Context) error {
+	m := &domain.ToDo{}
 
 	err := c.Bind(m)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, generateErrorResponse("invalid json", err))
+		c.JSON(http.StatusBadRequest, genError("invalid json", err))
 		return err
 	}
 
 	param := c.Param("id")
 	id, err := strconv.Atoi(param)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, generateErrorResponse("invalid parameter", err))
+		c.JSON(http.StatusBadRequest, genError("invalid parameter", err))
 		return err
 	}
 
 	m.Id = id
 
-	r, err := h.db.UpdateToDo(m)
+	r, err := a.service.UpdateToDo(m)
 	if err != nil && err.Error() == "id not found" {
 		c.NoContent(http.StatusNotFound)
 		return err
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, generateErrorResponse("error while updating data", err))
+		c.JSON(http.StatusInternalServerError, genError("error while updating data", err))
 		return err
 	}
 
@@ -147,8 +136,8 @@ func (h *apiHandler) updateToDo(c echo.Context) error {
 
 }
 
-func generateErrorResponse(m string, err error) *model.ErrorMessage {
-	return &model.ErrorMessage{
+func genError(m string, err error) *ErrorMessage {
+	return &ErrorMessage{
 		Message: m,
 		Details: err.Error(),
 	}

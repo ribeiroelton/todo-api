@@ -1,4 +1,4 @@
-module github.com/el7onr/go-todo
+module github.com/ribeiroelton/todo-api
 
 go 1.18
 

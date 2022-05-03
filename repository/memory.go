@@ -1,27 +1,27 @@
-package storage
+package repository
 
 import (
 	"errors"
 	"sync"
 
-	"github.com/el7onr/go-todo/model"
+	"github.com/ribeiroelton/todo-api/internal/domain"
 )
 
-type Database struct {
-	storage map[int]*model.ToDo
+type MemoryDB struct {
+	storage map[int]*domain.ToDo
 	id      int
 	mux     sync.Mutex
 }
 
-func NewDatabase() *Database {
-	return &Database{
-		storage: make(map[int]*model.ToDo),
+func NewMemoryDB() *MemoryDB {
+	return &MemoryDB{
+		storage: make(map[int]*domain.ToDo),
 		id:      0,
 		mux:     sync.Mutex{},
 	}
 }
 
-func (d *Database) CreateToDo(m *model.ToDo) (*model.ToDo, error) {
+func (d *MemoryDB) CreateToDo(m *domain.ToDo) (*domain.ToDo, error) {
 	d.mux.Lock()
 	d.storage[d.id] = m
 	d.mux.Unlock()
@@ -31,7 +31,7 @@ func (d *Database) CreateToDo(m *model.ToDo) (*model.ToDo, error) {
 	return m, nil
 }
 
-func (d *Database) UpdateToDo(m *model.ToDo) (*model.ToDo, error) {
+func (d *MemoryDB) UpdateToDo(m *domain.ToDo) (*domain.ToDo, error) {
 	d.mux.Lock()
 	if _, ok := d.storage[m.Id]; ok {
 		d.storage[m.Id] = m
@@ -43,7 +43,7 @@ func (d *Database) UpdateToDo(m *model.ToDo) (*model.ToDo, error) {
 	return nil, errors.New("id not found")
 }
 
-func (d *Database) DeleteToDo(id int) error {
+func (d *MemoryDB) DeleteToDoById(id int) error {
 	d.mux.Lock()
 	if _, ok := d.storage[id]; ok {
 		delete(d.storage, id)
@@ -55,19 +55,19 @@ func (d *Database) DeleteToDo(id int) error {
 	return errors.New("id not found")
 }
 
-func (d *Database) ReadToDo(id int) (*model.ToDo, error) {
+func (d *MemoryDB) GetTodoById(id int) (*domain.ToDo, error) {
 	if _, ok := d.storage[id]; ok {
 		return d.storage[id], nil
 	}
 	return nil, errors.New("id not found")
 }
 
-func (d *Database) ListToDo() []*model.ToDo {
-	list := []*model.ToDo{}
+func (d *MemoryDB) ListToDos() ([]*domain.ToDo, error) {
+	list := []*domain.ToDo{}
 
 	for _, v := range d.storage {
 		list = append(list, v)
 	}
 
-	return list
+	return list, nil
 }
