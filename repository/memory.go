@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"errors"
 	"sync"
 
 	"github.com/ribeiroelton/todo-api/internal/domain"
@@ -40,7 +39,7 @@ func (d *MemoryDB) UpdateToDo(m *domain.ToDo) (*domain.ToDo, error) {
 
 	}
 	d.mux.Unlock()
-	return nil, errors.New("id not found")
+	return nil, domain.ErrNotFound
 }
 
 func (d *MemoryDB) DeleteToDoById(id int) error {
@@ -52,14 +51,14 @@ func (d *MemoryDB) DeleteToDoById(id int) error {
 
 	}
 	d.mux.Unlock()
-	return errors.New("id not found")
+	return domain.ErrNotFound
 }
 
 func (d *MemoryDB) GetTodoById(id int) (*domain.ToDo, error) {
 	if _, ok := d.storage[id]; ok {
 		return d.storage[id], nil
 	}
-	return nil, errors.New("id not found")
+	return nil, domain.ErrNotFound
 }
 
 func (d *MemoryDB) ListToDos() ([]*domain.ToDo, error) {

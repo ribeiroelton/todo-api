@@ -64,7 +64,7 @@ func (a *ToDoHandler) GetToDo(c echo.Context) error {
 	}
 
 	r, err := a.service.GetTodoById(id)
-	if err != nil && err.Error() == "id not found" {
+	if err != nil && err == domain.ErrNotFound {
 		c.NoContent(http.StatusNotFound)
 		return err
 	}
@@ -87,7 +87,7 @@ func (a *ToDoHandler) DeleteToDo(c echo.Context) error {
 	}
 
 	err = a.service.DeleteToDoById(id)
-	if err != nil && err.Error() == "id not found" {
+	if err != nil && err == domain.ErrNotFound {
 		c.NoContent(http.StatusNotFound)
 		return err
 	}
@@ -121,7 +121,7 @@ func (a *ToDoHandler) UpdateToDo(c echo.Context) error {
 	m.Id = id
 
 	r, err := a.service.UpdateToDo(m)
-	if err != nil && err.Error() == "id not found" {
+	if err != nil && err == domain.ErrNotFound {
 		c.NoContent(http.StatusNotFound)
 		return err
 	}
